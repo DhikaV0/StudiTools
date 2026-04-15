@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PETUGAS
+  PEMINJAM
+}
+
+enum BorrowStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RETURNED
+  CANCELLED
+}
+
+model User {
+  id         String      @id @default(uuid())
+  name       String
+  username   String      @unique
+  password   String
+  role       Role        @default(PEMINJAM)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  borrowings Borrowing[] @relation("UserBorrowings")
+  approvals  Borrowing[] @relation("ApprovedBorrowings")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tools     Tool[]
+}
+
+model Tool {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  categoryId     String
+  stockTotal     Int
+  stockAvailable Int
+  condition      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  category       Category @relation(fields: [categoryId], references: [id])
+  borrowItems    BorrowItem[]
+}
+
+model Borrowing {
+  id           String        @id @default(uuid())
+  userId       String
+  approvedById String?
+  borrowDate   DateTime      @default(now())
+  returnDue    DateTime
+  returnDate   DateTime?
+  status       BorrowStatus  @default(PENDING)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  user         User          @relation("UserBorrowings", fields: [userId], references: [id])
+  approvedBy   User?         @relation("ApprovedBorrowings", fields: [approvedById], references: [id])
+
+  items        BorrowItem[]
+}
+
+model BorrowItem {
+  id          String   @id @default(uuid())
+  borrowingId String
+  toolId      String
+  quantity    Int
+  createdAt   DateTime @default(now())
+
+  borrowing   Borrowing @relation(fields: [borrowingId], references: [id], onDelete: Cascade)
+  tool        Tool      @relation(fields: [toolId], references: [id])
+
+  @@unique([borrowingId, toolId])
+}

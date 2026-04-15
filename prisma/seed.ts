@@ -1,0 +1,30 @@
+import { PrismaClient, Role } from "@prisma/client";
+import bcrypt from "bcryptjs";
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const hashedPassword = await bcrypt.hash("admin123", 10);
+
+  await prisma.user.upsert({
+    where: { username: "admin" },
+    update: {},
+    create: {
+      name: "Administrator",
+      username: "admin",
+      password: hashedPassword,
+      role: Role.ADMIN,
+    },
+  });
+}
+
+main()
+  .then(() => {
+    console.log("Seeder selesai");
+  })
+  .catch((e) => {
+    console.error(e);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
