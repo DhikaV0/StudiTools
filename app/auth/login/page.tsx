@@ -1,63 +1,61 @@
-// login.tsx
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Eye, EyeOff, LogIn, Sparkles, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, LogIn, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
+  const router = useRouter();
 
-    const handleSubmit = async (e: any) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-        try {
-            const res = await fetch("/api/auth", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "LOGIN",
-                    username,
-                    password,
-                }),
-            });
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-            if (!username || !password) {
-                return Response.json(
-                    { success: false, message: "Username and password required" },
-                    { status: 400 }
-                );
-            }
+    if (!username || !password) {
+      setError("Username and password required");
+      return;
+    }
 
-            if (res.ok) {
-                const data = await res.json();
+    setIsLoading(true);
+    setError("");
 
-                if (data.role === "ADMIN") {
-                    window.location.href = "/dashboard/admin";
-                } else {
-                    window.location.href = "/dashboard/peminjam";
-                }
-            } else {
-                const errorData = await res.json();
-                setError(
-                    errorData.message ||
-                        "Login failed. Please check your credentials.",
-                );
-            }
-        } catch (error) {
-            setError("An error occurred. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "LOGIN",
+          username,
+          password,
+        }),
+      });
 
-    return (
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Login failed");
+        return;
+      }
+
+      if (data.role === "ADMIN") {
+        router.push("/dashboard/admin");
+      } else {
+        router.push("/dashboard/peminjam");
+      }
+    } catch {
+      setError("Unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
         <div
             className="min-h-screen flex items-center justify-center p-4"
             style={{

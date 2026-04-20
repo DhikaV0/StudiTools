@@ -18,20 +18,76 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function AdminDashboard() {
-  const [recentActivities, setRecentActivities] = useState([
-    { id: 1, user: "Andhika Pratama", action: "Requested Canon EOS R5", status: "pending", date: "14 Apr 2026", time: "10:30 AM", avatar: "AP" },
-    { id: 2, user: "Rizky Fadillah", action: "Returned Sony A7III", status: "approved", date: "13 Apr 2026", time: "02:15 PM", avatar: "RF" },
-    { id: 3, user: "Sarah Wijaya", action: "Requested Rode NT1 Kit", status: "pending", date: "13 Apr 2026", time: "11:45 AM", avatar: "SW" },
-    { id: 4, user: "Budi Santoso", action: "Borrowed DJI RS3 Pro", status: "active", date: "12 Apr 2026", time: "09:00 AM", avatar: "BS" },
-    { id: 5, user: "Citra Dewi", action: "Returned Lighting Kit", status: "completed", date: "11 Apr 2026", time: "04:30 PM", avatar: "CD" },
-  ]);
+  const [stats, setStats] = useState<any>(null);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
-    { title: "Total Users", value: "247", change: "+12%", icon: Users, color: "cyan" },
-    { title: "Total Equipment", value: "156", change: "+5%", icon: Package, color: "warm" },
-    { title: "Active Borrowings", value: "23", change: "+8%", icon: BookOpen, color: "neon" },
-    { title: "Pending Approval", value: "7", change: "-2%", icon: Clock, color: "urban" },
-  ];
+  const statsConfig = stats
+  ? [
+      {
+        title: "Total Users",
+        value: stats.totalUsers,
+        icon: Users,
+        color: "cyan",
+      },
+      {
+        title: "Total Equipment",
+        value: stats.totalTools,
+        icon: Package,
+        color: "warm",
+      },
+      {
+        title: "Total Borrowings",
+        value: stats.totalBorrowings,
+        icon: BookOpen,
+        color: "neon",
+      },
+      {
+        title: "Pending Approval",
+        value: stats.pendingBorrowings,
+        icon: Clock,
+        color: "urban",
+      },
+    ]
+  : [];
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const res = await fetch("/api/dashboard");
+        const json = await res.json();
+  
+        if (json.success) {
+          setStats(json.data.stats);
+  
+          const mapped = json.data.recentBorrowings.map((b: any) => ({
+            id: b.id,
+            user: b.user.name,
+            action:
+              b.status === "RETURNED"
+                ? `Returned ${b.items.map((i: any) => i.tool.name).join(", ")}`
+                : `Requested ${b.items.map((i: any) => i.tool.name).join(", ")}`,
+            status: b.status.toLowerCase(),
+            date: new Date(b.borrowDate).toLocaleDateString(),
+            time: new Date(b.borrowDate).toLocaleTimeString(),
+            avatar: b.user.name
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")
+              .slice(0, 2),
+          }));
+  
+          setRecentActivities(mapped);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  
+    fetchDashboard();
+  }, []);
 
   const getStatusConfig = (status: string) => {
     switch(status) {

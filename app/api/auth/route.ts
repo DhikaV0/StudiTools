@@ -2,25 +2,32 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { serialize } from "cookie";
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET not defined");
+    }
+
     const body = await req.json();
     const { action } = body;
 
     if (!action) {
       return NextResponse.json(
-        { success: false, message: "Action is required" },
+        { success: false, message: "Action required" },
         { status: 400 }
       );
     }
 
-    // ======================
-    // LOGIN
-    // ======================
     if (action === "LOGIN") {
       const { username, password } = body;
+
+      if (!username || !password) {
+        return NextResponse.json(
+          { success: false, message: "Username and password required" },
+          { status: 400 }
+        );
+      }
 
       const user = await prisma.user.findUnique({
         where: { username },
@@ -43,11 +50,8 @@ export async function POST(req: Request) {
       }
 
       const token = jwt.sign(
-        {
-          userId: user.id,
-          role: user.role,
-        },
-        process.env.JWT_SECRET!,
+        { userId: user.id, role: user.role },
+        process.env.JWT_SECRET,
         { expiresIn: "1d" }
       );
 
@@ -59,58 +63,55 @@ export async function POST(req: Request) {
       response.cookies.set("token", token, {
         httpOnly: true,
         path: "/",
+        sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
       });
 
       return response;
     }
 
-    // ======================
-    // REGISTER
-    // ======================
     if (action === "REGISTER") {
       const { name, username, password } = body;
 
-      const existingUser = await prisma.user.findUnique({
+      if (!name || !username || !password) {
+        return NextResponse.json(
+          { success: false, message: "All fields required" },
+          { status: 400 }
+        );
+      }
+
+      const existing = await prisma.user.findUnique({
         where: { username },
       });
 
-      if (existingUser) {
+      if (existing) {
         return NextResponse.json(
           { success: false, message: "Username already exists" },
           { status: 400 }
         );
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashed = await bcrypt.hash(password, 10);
 
-      const user = await prisma.user.create({
+      await prisma.user.create({
         data: {
           name,
           username,
-          password: hashedPassword,
+          password: hashed,
           role: "PEMINJAM",
         },
       });
 
-      return NextResponse.json({
-        success: true,
-        message: "User created",
-        user: {
-          id: user.id,
-          username: user.username,
-          role: user.role,
-        },
-      });
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json(
       { success: false, message: "Invalid action" },
       { status: 400 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: "Server error" },
       { status: 500 }
     );
   }

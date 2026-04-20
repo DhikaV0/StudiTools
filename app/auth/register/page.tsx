@@ -39,7 +39,7 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "REGISTER",
-          fullName,
+          name: fullName,
           username,
           password,
         }),
@@ -48,7 +48,7 @@ export default function RegisterPage() {
       if (res.ok) {
         setSuccess(true);
         setTimeout(() => {
-          window.location.href = "/login";
+          window.location.href = "/auth/login";
         }, 2000);
       } else {
         const errorData = await res.json();
@@ -212,7 +212,7 @@ export default function RegisterPage() {
 
               <p className="text-sm text-white mt-6 text-center">
                 Already have an account?{" "}
-                <a href="/login" className="font-semibold transition-colors hover:opacity-80" style={{ color: `var(--color-cyan)` }}>
+                <a href="/auth/login" className="font-semibold transition-colors hover:opacity-80" style={{ color: `var(--color-cyan)` }}>
                   Sign in
                 </a>
               </p>

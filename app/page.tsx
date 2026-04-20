@@ -7,7 +7,7 @@ export default async function Home() {
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
-        redirect("/login");
+        redirect("/auth/login");
     }
 
     try {
@@ -25,8 +25,8 @@ export default async function Home() {
             redirect("/dashboard/peminjam");
         }
     } catch {
-        redirect("/login");
+        redirect("/auth/login");
     }
 
-    redirect("/login");
+    redirect("/auth/login");
 }
