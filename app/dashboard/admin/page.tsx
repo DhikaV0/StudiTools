@@ -133,8 +133,7 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
+        {statsConfig.map((stat, index) => {          const Icon = stat.icon;
           return (
             <div
               key={index}
@@ -158,15 +157,6 @@ export default function AdminDashboard() {
                   >
                     <Icon size={20} style={{ color: `var(--color-${stat.color})` }} />
                   </div>
-                  <span 
-                    className="text-xs font-medium px-2 py-1 rounded-full"
-                    style={{
-                      background: stat.change.startsWith("+") ? "rgba(0,194,255,0.1)" : "rgba(255,101,132,0.1)",
-                      color: stat.change.startsWith("+") ? "var(--color-cyan)" : "var(--color-neon)"
-                    }}
-                  >
-                    {stat.change}
-                  </span>
                 </div>
                 <h3 className="text-3xl font-bold text-white mb-1">{stat.value}</h3>
                 <p className="text-sm" style={{ color: `rgba(255,255,255,0.6)` }}>{stat.title}</p>
@@ -176,7 +166,6 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Equipment Distribution */}
         <div className="rounded-2xl p-6" style={{
@@ -213,7 +202,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Recent Activity Summary */}
         <div className="rounded-2xl p-6" style={{
           background: `linear-gradient(135deg, rgba(27,27,47,0.9), rgba(74,78,137,0.2))`,
           backdropFilter: "blur(10px)",
@@ -314,11 +302,6 @@ export default function AdminDashboard() {
                         <p className="text-sm text-white">{activity.date}</p>
                         <p className="text-xs" style={{ color: `rgba(255,255,255,0.5)` }}>{activity.time}</p>
                       </div>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <button className="p-1 rounded-lg transition-colors hover:bg-white/10">
-                        <MoreVertical size={16} style={{ color: `rgba(255,255,255,0.5)` }} />
-                      </button>
                     </td>
                   </tr>
                 );

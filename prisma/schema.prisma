@@ -19,19 +19,72 @@ enum BorrowStatus {
   REJECTED
   RETURNED
   CANCELLED
+  OVERDUE
+}
+
+enum FineType {
+  LATE
+  DAMAGE
+  LOST
+}
+
+enum FineStatus {
+  UNPAID
+  PAID
+  WAIVED
+}
+
+model Fine {
+  id          String     @id @default(uuid())
+  borrowingId String
+  amount      Decimal    @db.Decimal(10, 2)
+  type        FineType
+  description String?
+  status      FineStatus @default(UNPAID)
+  createdAt   DateTime   @default(now())
+  paidAt      DateTime?
+
+  borrowing Borrowing @relation(fields: [borrowingId], references: [id], onDelete: Cascade)
 }
 
 model User {
-  id         String      @id @default(uuid())
-  name       String
-  username   String      @unique
-  password   String
-  role       Role        @default(PEMINJAM)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  username  String   @unique
+  password  String
+  role      Role     @default(PEMINJAM)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  borrowings Borrowing[] @relation("UserBorrowings")
-  approvals  Borrowing[] @relation("ApprovedBorrowings")
+  borrowings         Borrowing[]         @relation("UserBorrowings")
+  approvals          Borrowing[]         @relation("ApprovedBorrowings")
+  returnTransactions ReturnTransaction[] @relation("ProcessedReturns")
+}
+
+model ReturnTransaction {
+  id            String   @id @default(uuid())
+  borrowingId   String   @unique
+  processedById String
+  returnDate    DateTime @default(now())
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  borrowing   Borrowing @relation(fields: [borrowingId], references: [id])
+  processedBy User      @relation("ProcessedReturns", fields: [processedById], references: [id])
+
+  returnItems ReturnItem[]
+}
+
+model ReturnItem {
+  id                  String   @id @default(uuid())
+  returnTransactionId String
+  toolId              String
+  quantityReturned    Int
+  conditionAfter      String
+  fineAmount          Decimal? @db.Decimal(10, 2)
+
+  returnTransaction ReturnTransaction @relation(fields: [returnTransactionId], references: [id], onDelete: Cascade)
+  tool              Tool              @relation(fields: [toolId], references: [id])
 }
 
 model Category {
@@ -40,7 +93,7 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tools     Tool[]
+  tools Tool[]
 }
 
 model Tool {
@@ -54,37 +107,42 @@ model Tool {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  category       Category @relation(fields: [categoryId], references: [id])
-  borrowItems    BorrowItem[]
+  category    Category     @relation(fields: [categoryId], references: [id])
+  borrowItems BorrowItem[]
+  returnItems ReturnItem[]
 }
 
 model Borrowing {
-  id           String        @id @default(uuid())
+  id           String       @id @default(uuid())
   userId       String
   approvedById String?
-  borrowDate   DateTime      @default(now())
+  borrowDate   DateTime     @default(now())
   returnDue    DateTime
   returnDate   DateTime?
-  status       BorrowStatus  @default(PENDING)
+  status       BorrowStatus @default(PENDING)
   notes        String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  user         User          @relation("UserBorrowings", fields: [userId], references: [id])
-  approvedBy   User?         @relation("ApprovedBorrowings", fields: [approvedById], references: [id])
+  user       User  @relation("UserBorrowings", fields: [userId], references: [id])
+  approvedBy User? @relation("ApprovedBorrowings", fields: [approvedById], references: [id])
 
-  items        BorrowItem[]
+  items    BorrowItem[]
+  fines    Fine[]
+  returnTx ReturnTransaction?
 }
 
 model BorrowItem {
-  id          String   @id @default(uuid())
-  borrowingId String
-  toolId      String
-  quantity    Int
-  createdAt   DateTime @default(now())
+  id               String   @id @default(uuid())
+  borrowingId      String
+  toolId           String
+  quantity         Int
+  toolNameSnapshot String
+  conditionBefore  String
+  createdAt        DateTime @default(now())
 
-  borrowing   Borrowing @relation(fields: [borrowingId], references: [id], onDelete: Cascade)
-  tool        Tool      @relation(fields: [toolId], references: [id])
+  borrowing Borrowing @relation(fields: [borrowingId], references: [id], onDelete: Cascade)
+  tool      Tool      @relation(fields: [toolId], references: [id])
 
   @@unique([borrowingId, toolId])
 }

@@ -44,13 +44,23 @@ export default function AdminCategoriesPage() {
     fetchCategories();
   }
 
-  async function handleDelete(id: string) {
-    await fetch(`/api/categories/${id}`, {
+async function handleDelete(id: string) {
+  if (!confirm("Apakah Anda yakin ingin menghapus data ini?")) return;
+
+  try {
+    const res = await fetch(`/api/categories/${id}`, {
       method: "DELETE",
     });
 
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+
+    alert("Data berhasil dihapus");
     fetchCategories();
+  } catch (error: any) {
+    alert(`Gagal menghapus: ${error.message}`);
   }
+}
 
   return (
     <div className="space-y-8 text-white">

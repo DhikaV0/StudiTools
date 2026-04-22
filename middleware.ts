@@ -1,39 +1,55 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
+import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get("token")?.value;
-  const pathname = request.nextUrl.pathname;
+const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
 
-  if (!token && pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // hanya protect dashboard
+  if (!pathname.startsWith("/dashboard")) {
+    return NextResponse.next();
   }
 
-  if (token && pathname.startsWith("/auth")) {
-    try {
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET!
-      ) as { role: string };
+  const token = req.cookies.get("token")?.value;
 
-      if (decoded.role === "ADMIN" || decoded.role === "PETUGAS") {
-        return NextResponse.redirect(
-          new URL("/dashboard/admin", request.url)
-        );
-      }
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
-      return NextResponse.redirect(
-        new URL("/dashboard/peminjam", request.url)
-      );
-    } catch {
-      return NextResponse.next();
+  try {
+    const { payload } = await jwtVerify(token, secret);
+    const role = payload.role as string;
+
+    // mapping role → base path
+    const roleBasePath: Record<string, string> = {
+      ADMIN: "/dashboard/admin",
+      PETUGAS: "/dashboard/petugas",
+      PEMINJAM: "/dashboard/peminjam",
+    };
+
+    const allowedBase = roleBasePath[role];
+
+    if (!allowedBase) {
+      return NextResponse.redirect(new URL("/login", req.url));
     }
-  }
 
-  return NextResponse.next();
+    // jika akses dashboard root → redirect otomatis
+    if (pathname === "/dashboard") {
+      return NextResponse.redirect(new URL(allowedBase, req.url));
+    }
+
+    // jika mencoba akses role lain
+    if (!pathname.startsWith(allowedBase)) {
+      return NextResponse.redirect(new URL(allowedBase, req.url));
+    }
+
+    return NextResponse.next();
+  } catch (error) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/auth/:path*"],
+  matcher: ["/dashboard/:path*"],
 };

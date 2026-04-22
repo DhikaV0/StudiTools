@@ -35,7 +35,7 @@ export default function AdminBorrowingsPage() {
         setBorrowings(data.data.data);
       } else {
         setBorrowings([]);
-      }
+      } 
     }
   }
 

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const { skip, take } = getPaginationParams(req.nextUrl.searchParams);
     const result = await BorrowingService.getAll(skip, take);
 
-    return successResponse(result);
+    return successResponse(result); 
   } catch (error: any) {
     return errorResponse(error.message, 500);
   }

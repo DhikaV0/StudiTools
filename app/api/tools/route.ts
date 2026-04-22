@@ -40,14 +40,21 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+// app/api/tools/route.ts
 export async function DELETE(req: NextRequest) {
   try {
     const user = requireAuth(req);
     requireRole(user, ["ADMIN"]);
 
-    const { id } = await req.json();
-    const result = await ToolService.delete(id);
+    // AMBIL ID DARI QUERY PARAMS
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
 
+    if (!id) {
+      return errorResponse("ID alat tidak ditemukan dalam request", 400);
+    }
+
+    const result = await ToolService.delete(id);
     return successResponse(result);
   } catch (error: any) {
     return errorResponse(error.message);

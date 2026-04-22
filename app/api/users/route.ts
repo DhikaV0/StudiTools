@@ -8,22 +8,39 @@ export async function GET(req: NextRequest) {
     const user = requireAuth(req);
     requireRole(user, ["ADMIN"]);
 
-    const data = await UserService.getAll();
+    const data = await UserService.getAllUsers();
     return successResponse(data);
   } catch (error: any) {
-    return errorResponse(error.message, 403);
+    return errorResponse(error.message, 400);
   }
 }
 
-export async function PATCH(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const user = requireAuth(req);
     requireRole(user, ["ADMIN"]);
 
-    const { userId, role } = await req.json();
+    const body = await req.json();
 
-    const result = await UserService.updateRole(userId, role);
-    return successResponse(result);
+    const newUser = await UserService.createUser(body);
+
+    return successResponse(newUser);
+  } catch (error: any) {
+    return errorResponse(error.message, 400);
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = requireAuth(req);
+    requireRole(user, ["ADMIN"]);
+
+    await UserService.deleteUser(params.id);
+
+    return successResponse({ message: "User deleted" });
   } catch (error: any) {
     return errorResponse(error.message, 400);
   }

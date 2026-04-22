@@ -81,13 +81,23 @@ export default function AdminToolsPage() {
     fetchTools();
   }
 
-  async function handleDelete(id: string) {
-    await fetch(`/api/tools/${id}`, {
+async function handleDelete(id: string) {
+  if (!confirm("Apakah Anda yakin ingin menghapus alat ini?")) return;
+
+  try {
+    const res = await fetch(`/api/tools?id=${id}`, {
       method: "DELETE",
     });
 
-    fetchTools();
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+
+    alert("Alat berhasil dihapus");
+    fetchTools(); // Refresh tabel
+  } catch (error: any) {
+    alert(`Gagal menghapus: ${error.message}`);
   }
+}
 
   return (
     <div className="space-y-8 text-white">

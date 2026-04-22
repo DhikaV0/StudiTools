@@ -55,13 +55,23 @@ export default function AdminUsersPage() {
     fetchUsers();
   }
 
-  async function handleDelete(id: string) {
-    await fetch(`/api/users/${id}`, {
+async function handleDelete(id: string) {
+  if (!confirm("Apakah Anda yakin ingin menghapus data ini?")) return;
+
+  try {
+    const res = await fetch(`/api/users/${id}`, {
       method: "DELETE",
     });
 
-    fetchUsers();
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+
+    alert("Data berhasil dihapus");
+    fetchUsers(); // Refresh list
+  } catch (error: any) {
+    alert(`Gagal menghapus: ${error.message}`);
   }
+}
 
   return (
     <div className="space-y-8 text-white">
